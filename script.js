@@ -58,8 +58,8 @@ class TicTacToe {
         try {
             // Generate both images in parallel
             const [image1, image2] = await Promise.all([
-                this.generateWeaponImage(weapon1),
-                this.generateWeaponImage(weapon2)
+                this.generateImageUrl(weapon1),
+                this.generateImageUrl(weapon2)
             ]);
             
             this.playerWeapons.player1 = {
@@ -72,8 +72,7 @@ class TicTacToe {
             };
 
             // Start the game
-            this.setupScreen.classList.add('hidden');
-            this.gameScreen.classList.remove('hidden');
+            this.showGameScreen();
             this.gameActive = true;
             this.currentPlayer = 'player1';
             this.updateStatus();
@@ -88,21 +87,43 @@ class TicTacToe {
         }
     }
 
-    async generateWeaponImage(prompt) {
-        const response = await fetch('/generate-image', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to generate image');
+    showError(message) {
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.add('visible');
+            setTimeout(() => {
+                errorElement.classList.remove('visible');
+            }, 5000);
         }
+    }
 
-        const data = await response.json();
-        return data.url;
+    async generateImageUrl(prompt) {
+        try {
+            // Keep the prompt simple and focused on the subject
+            const enhancedPrompt = `I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:   A cartoon-style ${prompt}, centered on a pure white background. It is designed with flat, solid colors and clean, smooth, rounded shapes in a minimalist style. The area around it is pure white.`;
+            
+            const response = await fetch('/generate-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ prompt: enhancedPrompt })
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                this.showError(data.error || 'Failed to generate image');
+                throw new Error(data.error || 'Failed to generate image');
+            }
+
+            return data.url;
+        } catch (error) {
+            console.error('Image generation error:', error);
+            this.showError(error.message);
+            throw error;
+        }
     }
 
     handleCellClick(cell) {
@@ -160,11 +181,22 @@ class TicTacToe {
         this.statusElement.textContent = `Player ${currentWeapon}'s turn`;
     }
 
+    showGameScreen() {
+        this.setupScreen.classList.add('hidden');
+        this.gameScreen.classList.remove('hidden');
+        document.querySelector('.app-container').classList.add('game-page');
+    }
+
+    showSetupScreen() {
+        this.gameScreen.classList.add('hidden');
+        this.setupScreen.classList.remove('hidden');
+        document.querySelector('.app-container').classList.remove('game-page');
+    }
+
     restartGame() {
         this.board = Array(9).fill('');
         this.cells.forEach(cell => cell.innerHTML = '');
-        this.setupScreen.classList.remove('hidden');
-        this.gameScreen.classList.add('hidden');
+        this.showSetupScreen();
         this.gameActive = false;
         this.weaponInput1.value = '';
         this.weaponInput2.value = '';
