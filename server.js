@@ -4,7 +4,6 @@ const OpenAI = require('openai');
 const path = require('path');
 
 const app = express();
-const port = 3000;
 
 // Create OpenAI configuration
 const openai = new OpenAI({
@@ -12,7 +11,7 @@ const openai = new OpenAI({
 });
 
 // Serve static files
-app.use(express.static('.'));
+app.use(express.static(path.join(__dirname, '/')));
 app.use(express.json());
 
 // Generate image endpoint
@@ -34,6 +33,8 @@ app.post('/generate-image', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+// Use environment port or default to 8000
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
